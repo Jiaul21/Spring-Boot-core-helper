@@ -58,12 +58,12 @@ mvn versions:display-dependency-updates
    ```
 2. **Tag a Release**:
    ```bash
-   git tag v${version}      # e.g., git tag v0.0.1
-   git push origin v${version}
+   git tag v<version>      # e.g., git tag v0.0.1
+   git push origin v<version>
    ```
 3. **Verify on JitPack**:
    - Visit [https://jitpack.io/#Jiaul21/Spring-Boot-core-helper](https://jitpack.io/#Jiaul21/Spring-Boot-core-helper).
-   - Click **Get it** on tag `v${version}`. JitPack automatically runs Maven using Java 17 and serves the JAR.
+   - Click **Get it** on tag `v<version>`. JitPack automatically runs Maven using Java 17 and serves the JAR.
 
 ---
 
@@ -73,8 +73,8 @@ The repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml
 
 1. **Tagging a Release**:
    ```bash
-   git tag v${version}      # e.g., git tag v0.0.1
-   git push origin v${version}
+   git tag v<version>
+   git push origin v<version>
    ```
 2. **Automated Publishing**:
    - The workflow configures Java 17, sets up the GitHub Packages repository authentication, and executes `mvn deploy`.

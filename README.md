@@ -48,7 +48,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.Jiaul21:Spring-Boot-core-helper:${version}' // e.g., '...:v0.0.1' or '...:main-SNAPSHOT'
+    implementation 'com.github.Jiaul21:Spring-Boot-core-helper:<version>' // e.g., '...:v0.0.1' or '...:main-SNAPSHOT'
 }
 ```
 
@@ -79,7 +79,7 @@ If you clone and build locally on your machine via `mvn clean install`, use the 
 </dependency>
 ```
 
-#### Gradle (Groovy & Kotlin DSL)
+#### Gradle (Groovy)
 ```groovy
 repositories {
     mavenCentral()
@@ -87,7 +87,19 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.jiaul:core-helper:${version}' // e.g., '...:0.0.1-SNAPSHOT'
+    implementation 'com.jiaul:core-helper:<version>' // e.g., '...:0.0.1-SNAPSHOT'
+}
+```
+
+#### Gradle (Kotlin DSL - `build.gradle.kts`)
+```kotlin
+repositories {
+    mavenCentral()
+    mavenLocal() // reads from your local ~/.m2/repository cache
+}
+
+dependencies {
+    implementation("com.jiaul:core-helper:<version>") // e.g., "...:0.0.1-SNAPSHOT"
 }
 ```
 
@@ -117,7 +129,7 @@ Published packages can also be consumed from GitHub Packages:
 </dependencies>
 ```
 
-#### Gradle (`build.gradle`)
+#### Gradle (Groovy - `build.gradle`)
 ```groovy
 repositories {
     mavenCentral()
@@ -131,7 +143,25 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.jiaul:core-helper:${version}'
+    implementation 'com.jiaul:core-helper:<version>'
+}
+```
+
+#### Gradle (Kotlin DSL - `build.gradle.kts`)
+```kotlin
+repositories {
+    mavenCentral()
+    maven {
+        url = uri("https://maven.pkg.github.com/Jiaul21/Spring-Boot-core-helper")
+        credentials {
+            username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+            password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
+
+dependencies {
+    implementation("com.jiaul:core-helper:${version}")
 }
 ```
 
