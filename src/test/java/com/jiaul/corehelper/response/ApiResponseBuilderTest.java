@@ -275,4 +275,39 @@ class ApiResponseBuilderTest {
         assertThat(response.getHeaders().getFirst("X-Custom")).isEqualTo("value");
         assertThat(response.getBody()).isEqualTo("Processed");
     }
+
+    @Test
+    @DisplayName("methodNotAllowed() should return 405 with error and data")
+    void testMethodNotAllowed() {
+        ResponseEntity<Response> response = ApiResponseBuilder.methodNotAllowed("Method not supported", "GET only");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Method Not Allowed");
+        assertThat(response.getBody().error()).isEqualTo("Method not supported");
+        assertThat(response.getBody().data()).isEqualTo("GET only");
+    }
+
+    @Test
+    @DisplayName("requestTimeout() should return 408 with custom message")
+    void testRequestTimeout() {
+        ResponseEntity<Response> response = ApiResponseBuilder.requestTimeout("Timed out", "Timeout error", 5000);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.REQUEST_TIMEOUT);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Timed out");
+        assertThat(response.getBody().error()).isEqualTo("Timeout error");
+        assertThat(response.getBody().data()).isEqualTo(5000);
+    }
+
+    @Test
+    @DisplayName("unsupportedMediaType() should return 415 with error")
+    void testUnsupportedMediaType() {
+        ResponseEntity<Response> response = ApiResponseBuilder.unsupportedMediaType("Unsupported type");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Unsupported Media Type");
+        assertThat(response.getBody().error()).isEqualTo("Unsupported type");
+    }
 }

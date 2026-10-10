@@ -89,6 +89,39 @@ class ApiExceptionTest {
     }
 
     @Test
+    @DisplayName("MethodNotAllowedException maps to 405")
+    void testMethodNotAllowedException() {
+        MethodNotAllowedException ex = new MethodNotAllowedException("Method not allowed", "POST not supported", Map.of("allowed", "GET"));
+
+        assertThat(ex.getMessage()).isEqualTo("Method not allowed");
+        assertThat(ex.getError()).isEqualTo("POST not supported");
+        assertThat(ex.getData()).isEqualTo(Map.of("allowed", "GET"));
+        assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    @Test
+    @DisplayName("RequestTimeoutException maps to 408")
+    void testRequestTimeoutException() {
+        RequestTimeoutException ex = new RequestTimeoutException("Timeout", "Gateway timed out", "5000ms");
+
+        assertThat(ex.getMessage()).isEqualTo("Timeout");
+        assertThat(ex.getError()).isEqualTo("Gateway timed out");
+        assertThat(ex.getData()).isEqualTo("5000ms");
+        assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.REQUEST_TIMEOUT);
+    }
+
+    @Test
+    @DisplayName("UnsupportedMediaTypeException maps to 415")
+    void testUnsupportedMediaTypeException() {
+        UnsupportedMediaTypeException ex = new UnsupportedMediaTypeException("Unsupported media", "XML not supported", "application/xml");
+
+        assertThat(ex.getMessage()).isEqualTo("Unsupported media");
+        assertThat(ex.getError()).isEqualTo("XML not supported");
+        assertThat(ex.getData()).isEqualTo("application/xml");
+        assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    }
+
+    @Test
     @DisplayName("Exception cause chaining and 4-argument constructor work properly")
     void testExceptionChaining() {
         IllegalArgumentException cause = new IllegalArgumentException("Root cause");

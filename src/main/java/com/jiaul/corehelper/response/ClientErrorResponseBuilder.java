@@ -249,4 +249,103 @@ public abstract class ClientErrorResponseBuilder extends SuccessResponseBuilder 
     public static ResponseEntity<Response> tooManyRequests(String message, Object error, Object data) {
         return build(HttpStatus.TOO_MANY_REQUESTS, message, error, data);
     }
+
+    /**
+     * Returns an HTTP 405 (Method Not Allowed) response with default message "Method Not Allowed" and error details.
+     *
+     * @param error error details or error payload
+     * @return a 405 Method Not Allowed {@link ResponseEntity}
+     */
+    public static ResponseEntity<Response> methodNotAllowed(Object error) {
+        return build(HttpStatus.METHOD_NOT_ALLOWED, "Method Not Allowed", error);
+    }
+
+    /**
+     * Returns an HTTP 405 (Method Not Allowed) response with default message "Method Not Allowed", error details, and structured data.
+     *
+     * @param error error details or error payload
+     * @param data  allowed methods or metadata
+     * @return a 405 Method Not Allowed {@link ResponseEntity}
+     */
+    public static ResponseEntity<Response> methodNotAllowed(Object error, Object data) {
+        return build(HttpStatus.METHOD_NOT_ALLOWED, "Method Not Allowed", error, data);
+    }
+
+    /**
+     * Returns an HTTP 405 (Method Not Allowed) response with a custom message, error details, and structured data.
+     *
+     * @param message custom failure message
+     * @param error   error details or error payload
+     * @param data    allowed methods or metadata
+     * @return a 405 Method Not Allowed {@link ResponseEntity}
+     */
+    public static ResponseEntity<Response> methodNotAllowed(String message, Object error, Object data) {
+        return build(HttpStatus.METHOD_NOT_ALLOWED, message, error, data);
+    }
+
+    /**
+     * Returns an HTTP 408 (Request Timeout) response with default message "Request Timeout" and error details.
+     *
+     * @param error error details or error payload
+     * @return a 408 Request Timeout {@link ResponseEntity}
+     */
+    public static ResponseEntity<Response> requestTimeout(Object error) {
+        return build(HttpStatus.REQUEST_TIMEOUT, "Request Timeout", error);
+    }
+
+    /**
+     * Returns an HTTP 408 (Request Timeout) response with default message "Request Timeout", error details, and structured data.
+     *
+     * @param error error details or error payload
+     * @param data  timeout metadata or details
+     * @return a 408 Request Timeout {@link ResponseEntity}
+     */
+    public static ResponseEntity<Response> requestTimeout(Object error, Object data) {
+        return build(HttpStatus.REQUEST_TIMEOUT, "Request Timeout", error, data);
+    }
+
+    /**
+     * Returns an HTTP 408 (Request Timeout) response with a custom message, error details, and structured data.
+     *
+     * @param message custom failure message
+     * @param error   error details or error payload
+     * @param data    timeout metadata or details
+     * @return a 408 Request Timeout {@link ResponseEntity}
+     */
+    public static ResponseEntity<Response> requestTimeout(String message, Object error, Object data) {
+        return build(HttpStatus.REQUEST_TIMEOUT, message, error, data);
+    }
+
+    /**
+     * Returns an HTTP 415 (Unsupported Media Type) response with default message "Unsupported Media Type" and error details.
+     *
+     * @param error error details or error payload
+     * @return a 415 Unsupported Media Type {@link ResponseEntity}
+     */
+    public static ResponseEntity<Response> unsupportedMediaType(Object error) {
+        return build(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported Media Type", error);
+    }
+
+    /**
+     * Returns an HTTP 415 (Unsupported Media Type) response with default message "Unsupported Media Type", error details, and structured data.
+     *
+     * @param error error details or error payload
+     * @param data  supported media types or metadata
+     * @return a 415 Unsupported Media Type {@link ResponseEntity}
+     */
+    public static ResponseEntity<Response> unsupportedMediaType(Object error, Object data) {
+        return build(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported Media Type", error, data);
+    }
+
+    /**
+     * Returns an HTTP 415 (Unsupported Media Type) response with a custom message, error details, and structured data.
+     *
+     * @param message custom failure message
+     * @param error   error details or error payload
+     * @param data    supported media types or metadata
+     * @return a 415 Unsupported Media Type {@link ResponseEntity}
+     */
+    public static ResponseEntity<Response> unsupportedMediaType(String message, Object error, Object data) {
+        return build(HttpStatus.UNSUPPORTED_MEDIA_TYPE, message, error, data);
+    }
 }
