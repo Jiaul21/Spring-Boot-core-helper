@@ -25,6 +25,14 @@ This guide provides instructions and architectural principles for working on, ma
 5. **Uniform Exception Handling**:
    - All custom exceptions inherit from `ApiException` which encapsulates HTTP status, `message`, `error`, and `data`.
 
+6. **Auto-Configured Global Exception Handling**:
+   - `CoreHelperAutoConfiguration` automatically registers `CoreExceptionHandler` via Spring Boot 3's `AutoConfiguration.imports` and `spring.factories`.
+   - Uses `@Order(Ordered.LOWEST_PRECEDENCE)` so application-level handlers always take precedence.
+   - Consumers can disable auto-configuration via `core-helper.exception-handler.enabled=false`.
+
+7. **Modular Utility Classes**:
+   - Specialized stateless classes: `StringUtils` (with unified `CharSequence`, `StringBuilder`, and `StringBuffer` support for blank/empty/whitespace checks and safe fallbacks), `CollectionUtils` (collections, maps, arrays, null-safe collections, and default fallbacks), and `RandomUtils` (cryptographically secure random strings, numbers, and UUIDs).
+
 ---
 
 ## 🚀 Common Commands

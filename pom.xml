@@ -66,10 +66,25 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Spring Boot AutoConfigure (provided scope for auto-configuration support) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Jackson Annotations (provided scope to avoid transitive pollution) -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>

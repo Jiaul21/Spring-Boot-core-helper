@@ -262,9 +262,18 @@ public class UserController {
 | `notFound(error)` | `404 NOT FOUND` | `Response("Resource Not Found", error, null, timestamp)` |
 | `notFound(error, data)` | `404 NOT FOUND` | `Response("Resource Not Found", error, data, timestamp)` |
 | `notFound(message, error, data)` | `404 NOT FOUND` | `Response(message, error, data, timestamp)` |
+| `methodNotAllowed(error)` | `405 METHOD NOT ALLOWED` | `Response("Method Not Allowed", error, null, timestamp)` |
+| `methodNotAllowed(error, data)` | `405 METHOD NOT ALLOWED` | `Response("Method Not Allowed", error, data, timestamp)` |
+| `methodNotAllowed(message, error, data)` | `405 METHOD NOT ALLOWED` | `Response(message, error, data, timestamp)` |
+| `requestTimeout(error)` | `408 REQUEST TIMEOUT` | `Response("Request Timeout", error, null, timestamp)` |
+| `requestTimeout(error, data)` | `408 REQUEST TIMEOUT` | `Response("Request Timeout", error, data, timestamp)` |
+| `requestTimeout(message, error, data)` | `408 REQUEST TIMEOUT` | `Response(message, error, data, timestamp)` |
 | `conflict(error)` | `409 CONFLICT` | `Response("Conflict", error, null, timestamp)` |
 | `conflict(error, data)` | `409 CONFLICT` | `Response("Conflict", error, data, timestamp)` |
 | `conflict(message, error, data)` | `409 CONFLICT` | `Response(message, error, data, timestamp)` |
+| `unsupportedMediaType(error)` | `415 UNSUPPORTED MEDIA TYPE` | `Response("Unsupported Media Type", error, null, timestamp)` |
+| `unsupportedMediaType(error, data)` | `415 UNSUPPORTED MEDIA TYPE` | `Response("Unsupported Media Type", error, data, timestamp)` |
+| `unsupportedMediaType(message, error, data)` | `415 UNSUPPORTED MEDIA TYPE` | `Response(message, error, data, timestamp)` |
 | `unprocessableEntity(error)` | `422 UNPROCESSABLE ENTITY` | `Response("Unprocessable Entity", error, null, timestamp)` |
 | `unprocessableEntity(error, data)` | `422 UNPROCESSABLE ENTITY` | `Response("Unprocessable Entity", error, data, timestamp)` |
 | `unprocessableEntity(message, error, data)` | `422 UNPROCESSABLE ENTITY` | `Response(message, error, data, timestamp)` |
@@ -301,8 +310,17 @@ throw new ForbiddenException("Forbidden", "Account lacks required permissions");
 // 404 Not Found
 throw new NotFoundException("Not Found", "User not found with id: " + id);
 
+// 405 Method Not Allowed
+throw new MethodNotAllowedException("Method Not Allowed", "POST not supported", Map.of("allowed", "GET"));
+
+// 408 Request Timeout
+throw new RequestTimeoutException("Request Timeout", "Upstream server timed out");
+
 // 409 Conflict
 throw new ConflictException("Conflict", "Username already taken", Map.of("field", "username"));
+
+// 415 Unsupported Media Type
+throw new UnsupportedMediaTypeException("Unsupported Media Type", "XML format is not supported");
 
 // 422 Unprocessable Entity (domain / business rule validation)
 throw new UnprocessableEntityException("Unprocessable Entity", "End date must be after start date", "date_range");
@@ -311,46 +329,102 @@ throw new UnprocessableEntityException("Unprocessable Entity", "End date must be
 throw new TooManyRequestsException("Too Many Requests", "Rate limit exceeded", "Retry in 60s");
 ```
 
-#### Global Exception Handler Integration
-Because every exception extends `ApiException` and exposes `getHttpStatus()`, `getMessage()`, `getError()`, and `getData()`, consumer applications can handle all API exceptions with a single method:
+---
 
-```java
-@RestControllerAdvice
-public class GlobalExceptionHandler {
+### 3. Automatic Global Exception Handling (`CoreExceptionHandler`)
 
-    @ExceptionHandler(ApiException.class)
-    public ResponseEntity<Response> handleApiException(ApiException ex) {
-        return ApiResponseBuilder.build(ex.getHttpStatus(), ex.getMessage(), ex.getError(), ex.getData());
-    }
-}
+`core-helper` provides an **out-of-the-box global exception handler** registered automatically via Spring Boot Auto-Configuration (`CoreHelperAutoConfiguration`).
+
+#### How It Works:
+1. **Zero Configuration**: Any `ApiException` thrown by your controllers or service layer is automatically intercepted.
+2. **Unified JSON Response**: It is immediately serialized into the standardized `Response` JSON format with the matching HTTP status code.
+3. **Structured Diagnostic Logging**: Logs origin class, method, line number, HTTP status, message, error payload, and data payload to SLF4J:
+   ```text
+   Origin     : com.example.service.UserService.findById:42
+   Exception  : NotFoundException
+   HttpStatus : 404 NOT_FOUND
+   Message    : Not Found
+   Error      : User not found with id: 123
+   Data       : N/A
+   ```
+4. **Non-Intrusive Priority**: Marked with `@Order(Ordered.LOWEST_PRECEDENCE)` so any application-level `@RestControllerAdvice` you write will automatically take precedence over the default handler.
+
+#### Disabling Auto-Configuration (Optional)
+If you wish to manage all exception handling manually, you can disable the default handler in `application.properties` or `application.yml`:
+
+```properties
+core-helper.exception-handler.enabled=false
 ```
 
 ---
 
-### 3. Null, Defaults & Collection Utilities (`Utility`)
-Pure static, stateless methods to prevent `NullPointerException`s, handle safe fallbacks, and validate UUIDs:
+### 4. Modular Utility Classes
+
+`core-helper` provides a high-performance, stateless utility suite divided into specialized classes:
+
+#### A. String & Buffer Utilities ([StringUtils](file:///d:/enterprise-system/spring-helper/core-helper/src/main/java/com/jiaul/corehelper/utility/StringUtils.java))
+All methods accept `CharSequence`, enabling unified support across `String`, `StringBuilder`, and `StringBuffer` without unnecessary allocations:
 
 ```java
-import com.jiaul.corehelper.utility.Utility;
+import com.jiaul.corehelper.utility.StringUtils;
 
-// Null & Blank Checks
-Utility.isNotBlank("hello");       // true
-Utility.isBlank("   ");            // true
-Utility.isEmpty(userList);         // true if null or empty
+// Blank & Empty Checks (supports String, StringBuilder, StringBuffer)
+StringUtils.isBlank("   ");                      // true
+StringUtils.isNotBlank(new StringBuilder("ok")); // true
+StringUtils.isEmpty("");                         // true
+StringUtils.isNotEmpty(new StringBuffer("hi"));  // true
+StringUtils.containsWhitespace("foo bar");       // true
 
-// Safe Defaults (replaces verbose ternary null-checks)
-int pageSize = Utility.defaultIfNull(request.getPageSize(), 20);
-String sort = Utility.defaultIfBlank(request.getSortBy(), "createdAt");
+// Safe Defaults & Null Conversions
+String val = StringUtils.defaultIfBlank(input, "fallback");
+String tag = StringUtils.defaultIfEmpty(emptyStr, "defaultTag");
+String nonNull = StringUtils.emptyIfNull(nullableStr); // returns "" if null
+String strVal = StringUtils.defaultIfNull(nullCs, "default");
+```
 
-// Null-Safe Collections (loop safely without NPE)
-for (Item item : Utility.emptyIfNull(order.getItems())) {
-    process(item);
+#### B. Collection & Map Utilities ([CollectionUtils](file:///d:/enterprise-system/spring-helper/core-helper/src/main/java/com/jiaul/corehelper/utility/CollectionUtils.java))
+Eliminates `NullPointerException`s in loops and provides safe defaults:
+
+```java
+import com.jiaul.corehelper.utility.CollectionUtils;
+
+// Emptiness Checks (Collections, Maps, Arrays)
+CollectionUtils.isEmpty(userList);           // true if null or empty
+CollectionUtils.isNotEmpty(requestMap);      // true if non-null and size > 0
+CollectionUtils.isEmpty(new String[0]);      // true
+
+// Null-Safe Collections (loop safely without ternary null checks)
+for (Item item : CollectionUtils.emptyIfNull(order.getItems())) {
+    process(item); // never throws NPE even if getItems() is null
 }
 
-// UUID Validation
-if (!Utility.isValidUuid(idParam)) {
-    throw new BadRequestException("Invalid UUID format");
-}
+// Safe Defaults
+int pageSize = CollectionUtils.defaultIfNull(request.getPageSize(), 20);
+List<String> list = CollectionUtils.defaultIfEmpty(customTags, defaultTags);
+Map<String, String> map = CollectionUtils.defaultIfEmpty(customProps, defaultProps);
+```
+
+#### C. Secure Random & UUID Utilities ([RandomUtils](file:///d:/enterprise-system/spring-helper/core-helper/src/main/java/com/jiaul/corehelper/utility/RandomUtils.java))
+Cryptographically secure random values and RFC-compliant UUID operations backed by `SecureRandom`:
+
+```java
+import com.jiaul.corehelper.utility.RandomUtils;
+
+// UUID Generation & Strict Validation
+String id = RandomUtils.randomUuid();                 // e.g. "c9a646d3-9c61-4cc9-bc55-e4604e0e4708"
+String hexId = RandomUtils.randomUuidWithoutDashes(); // 32 hex chars without hyphens
+boolean valid = RandomUtils.isValidUuid(idParam);     // true if valid UUID regex + parse
+
+// Secure Random Strings
+String otp = RandomUtils.randomNumeric(6);            // e.g. "948201" (digits only)
+String token = RandomUtils.randomAlphanumeric(16);    // e.g. "7kR9m2WqPx81aL0b"
+String custom = RandomUtils.randomString(8, "ABCXYZ");// custom character pool
+
+// Secure Random Numbers
+int pin = RandomUtils.randomInt(1000, 9999);          // range [min, max)
+long sessionVal = RandomUtils.randomLong(100L, 500L);
+double factor = RandomUtils.randomDouble();           // in [0.0, 1.0)
+boolean coinFlip = RandomUtils.randomBoolean();
 ```
 
 ---
