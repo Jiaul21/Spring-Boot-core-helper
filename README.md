@@ -14,6 +14,23 @@ Designed as a **professional thin library JAR**:
 
 ---
 
+## 📑 Table of Contents
+
+- [Installation](#-installation)
+  - [Option 1: Via JitPack (Recommended for Remote Consumption)](#option-1-via-jitpack-recommended-for-remote-consumption)
+  - [Option 2: Local Development Cache (`~/.m2`)](#option-2-local-development-cache-m2)
+  - [Option 3: GitHub Packages](#option-3-github-packages)
+- [Features & Usage](#-features--usage)
+  - [1. Unified API Responses (`ApiResponseBuilder` & `Response`)](#1-unified-api-responses-apiresponsebuilder--response)
+  - [2. Standardized API Exceptions (`ApiException`)](#2-standardized-api-exceptions-apiexception)
+  - [3. Automatic Global Exception Handling (`CoreExceptionHandler`)](#3-automatic-global-exception-handling-coreexceptionhandler)
+  - [4. Modular Utility Classes (`StringUtils`, `CollectionUtils`, `RandomUtils`)](#4-modular-utility-classes)
+- [Related Libraries](#-related-libraries)
+- [Building From Source](#-building-from-source)
+- [License](#-license)
+
+---
+
 ## 📦 Installation
 
 ### Option 1: Via JitPack (Recommended for Remote Consumption)
@@ -429,6 +446,15 @@ boolean coinFlip = RandomUtils.randomBoolean();
 
 ---
 
+## 🔗 Related Libraries
+
+`core-helper` is designed as a completely decoupled foundation library that can be used standalone in any Spring Boot project. If you are developing data-driven or JPA applications, explore these complementary libraries from the **Spring Helper** suite:
+
+* **[JPA Helper (`jpa-helper`)](https://github.com/Jiaul21/Spring-Boot-jpa-helper)**: Enterprise Spring Data JPA utilities featuring auditable base entities, dynamic Hibernate soft-delete filters, batch CASE-WHEN bulk update engines, and dynamic nested relation fetch joins with N+1 query elimination.
+* **[Metamodel Generator (`metamodel-generator`)](https://github.com/Jiaul21/Spring-Boot-metamodel-generator)**: Compile-time annotation processor generating type-safe metamodel descriptors (`ModelField`), deep relation path navigation, and reflection-free `toMap()` / `toValues()` helpers for JPA entities and Java Records.
+
+---
+
 ## 🛠️ Building From Source
 
 ```bash
@@ -444,3 +470,9 @@ mvn clean install
 ```
 
 > **Note**: When consuming artifacts locally in other Maven or Gradle projects on the same machine, running `mvn clean install` places `core-helper-${version}.jar` directly into your local `~/.m2/repository/com/jiaul/core-helper/` cache.
+
+---
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.

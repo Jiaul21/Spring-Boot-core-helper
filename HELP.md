@@ -33,6 +33,9 @@ This guide provides instructions and architectural principles for working on, ma
 7. **Modular Utility Classes**:
    - Specialized stateless classes: `StringUtils` (with unified `CharSequence`, `StringBuilder`, and `StringBuffer` support for blank/empty/whitespace checks and safe fallbacks), `CollectionUtils` (collections, maps, arrays, null-safe collections, and default fallbacks), and `RandomUtils` (cryptographically secure random strings, numbers, and UUIDs).
 
+8. **Completely Decoupled Architecture**:
+   - `core-helper` has zero dependencies on persistence or JPA technologies. It operates independently as a lightweight foundation across any Spring Boot service (REST APIs, microservices, or background jobs).
+
 ---
 
 ## 🚀 Common Commands
