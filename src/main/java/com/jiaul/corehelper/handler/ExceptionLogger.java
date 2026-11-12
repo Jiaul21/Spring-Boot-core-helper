@@ -6,20 +6,28 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 
 /**
- * Abstract base exception handler providing uniform diagnostic logging across all core exception handlers.
+ * Utility class providing uniform diagnostic logging across all exception handlers.
  */
-public abstract class ExceptionLogger {
+public final class ExceptionLogger {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(ExceptionLogger.class);
+
+    private ExceptionLogger() {
+        // Prevent instantiation
+    }
 
     /**
      * Logs detailed context about the exception including origin source class,
      * method, line, exception name, HTTP status code, message, error details, and payload data.
      *
-     * @param ex the exception to log
+     * @param ex     the exception to log
      * @param status the HTTP status code associated with the error response
      */
-    protected void logException(Throwable ex, HttpStatus status) {
+    public static void logException(Throwable ex, HttpStatus status) {
+        if (ex == null) {
+            return;
+        }
+
         StackTraceElement origin = null;
         if (ex.getStackTrace() != null && ex.getStackTrace().length > 0) {
             origin = ex.getStackTrace()[0];
