@@ -1,6 +1,7 @@
-package com.jiaul.corehelper.exception.handler;
+package com.jiaul.corehelper.handler;
 
 import com.jiaul.corehelper.dto.Response;
+import com.jiaul.corehelper.handler.ValidationExceptionHandler;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
@@ -16,9 +17,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class ValidationExceptionLoggerTest {
+class ValidationExceptionHandlerTest {
 
-    private final ValidationExceptionLogger handler = new ValidationExceptionLogger();
+    private final ValidationExceptionHandler handler = new ValidationExceptionHandler();
 
     @Test
     @DisplayName("handleConstraintViolations should format property violations into 400 BAD REQUEST")

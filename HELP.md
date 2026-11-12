@@ -9,7 +9,7 @@ This guide provides instructions and architectural principles for working on, ma
 `core-helper` is designed as a **foundational, zero-pollution Spring Boot library**:
 
 1. **Zero Classpath Pollution**:
-   - `spring-web`, `spring-webmvc`, `jakarta.validation-api`, `jakarta.servlet-api`, `jackson-annotations`, and `slf4j-api` are scoped as `<scope>provided</scope>` and `<optional>true</optional>`.
+   - `spring-web`, `spring-webmvc`, `jakarta.validation-api`, `jakarta.servlet-api`, `spring-tx`, `jakarta.persistence-api`, `jackson-annotations`, and `slf4j-api` are scoped as `<scope>provided</scope>` and `<optional>true</optional>`.
    - Consumer applications retain 100% control over their dependencies and versions without transitive dependency bloat.
 
 2. **Standard Thin JAR**:
@@ -27,18 +27,22 @@ This guide provides instructions and architectural principles for working on, ma
    - All custom exceptions inherit from `ApiException` which encapsulates HTTP status, `message`, `error`, and `data`.
 
 6. **Modular & Conditional Auto-Configuration**:
-   - `CoreHelperAutoConfiguration` registers exception handlers conditionally:
-     - `CoreExceptionLogger`: Always active for Servlet web applications (`ApiException`, `@Valid` bean validation, missing/malformed JSON body).
-     - `ValidationExceptionLogger`: Conditionally loaded via `@ConditionalOnClass(name = "jakarta.validation.ConstraintViolationException")`.
-     - `SpringWebMvcExceptionLogger`: Conditionally loaded via `@ConditionalOnClass` for modern Spring 6.1+ / Spring Boot 3.2+ features (`NoResourceFoundException`, `HandlerMethodValidationException`).
+   - `CoreHelperAutoConfiguration` registers exception handlers from `com.jiaul.corehelper.handler` conditionally by library / version boundary, using static `ExceptionLogger.logException(...)` for uniform diagnostic logging:
+     - `CoreExceptionHandler`: Always active for Servlet web applications (`ApiException` custom exceptions).
+     - `SpringWebExceptionHandler`: Conditionally loaded via `@ConditionalOnClass` for `spring-web` (`MethodArgumentNotValidException`, `HttpMessageNotReadableException`).
+     - `SpringWebValidationExceptionHandler`: Conditionally loaded via `@ConditionalOnClass(name = "org.springframework.web.method.annotation.HandlerMethodValidationException")` for Spring Web 6.1+ / Spring Boot 3.2+ method validation.
+     - `SpringWebMvcExceptionHandler`: Conditionally loaded via `@ConditionalOnClass(name = "org.springframework.web.servlet.resource.NoResourceFoundException")` for Spring Web MVC 6.1+ / Spring Boot 3.2+ unmapped 404 endpoints.
+     - `ValidationExceptionHandler`: Conditionally loaded via `@ConditionalOnClass(name = "jakarta.validation.ConstraintViolationException")`.
+     - `DataAccessExceptionHandler`: Conditionally loaded via `@ConditionalOnClass(name = "org.springframework.dao.DataIntegrityViolationException")`.
+     - `JpaExceptionHandler`: Conditionally loaded via `@ConditionalOnClass(name = "jakarta.persistence.EntityNotFoundException")`.
    - If a consumer does not include an optional dependency, Spring Boot skips the corresponding bean with zero startup reflection errors.
-   - Handlers can be disabled globally (`core-helper.exception-handler.enabled=false`) or granularly (`.core.enabled=false`, `.validation.enabled=false`, `.webmvc.enabled=false`).
+   - Handlers can be disabled globally (`core-helper.exception-handler.enabled=false`) or granularly (`.core.enabled=false`, `.web.enabled=false`, `.web-validation.enabled=false`, `.webmvc.enabled=false`, `.validation.enabled=false`, `.data-access.enabled=false`, `.jpa.enabled=false`).
 
 7. **Modular Utility Classes**:
    - Specialized stateless classes: `StringUtils` (with unified `CharSequence`, `StringBuilder`, and `StringBuffer` support for blank/empty/whitespace checks and safe fallbacks), `CollectionUtils` (collections, maps, arrays, null-safe collections, and default fallbacks), and `RandomUtils` (cryptographically secure random strings, numbers, and UUIDs).
 
 8. **Completely Decoupled Architecture**:
-   - `core-helper` has zero dependencies on persistence or JPA technologies. It operates independently as a lightweight foundation across any Spring Boot service (REST APIs, microservices, or background jobs).
+   - `core-helper` has zero mandatory dependencies on persistence or JPA technologies (persistence handlers are purely optional and conditional). It operates independently as a lightweight foundation across any Spring Boot service (REST APIs, microservices, or background jobs).
 
 ---
 

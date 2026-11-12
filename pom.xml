@@ -90,6 +90,22 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Spring TX (provided scope for DataIntegrityViolationException) -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Jakarta Persistence API (provided scope for EntityNotFoundException) -->
+        <dependency>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Spring Boot AutoConfigure (provided scope for auto-configuration support) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

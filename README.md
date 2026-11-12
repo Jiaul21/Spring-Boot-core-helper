@@ -8,7 +8,7 @@
 A foundational, zero-overhead Spring Boot library providing uniform API response builders, standardized API exception hierarchies, modular conditional exception handling, and null/empty utility validators.
 
 Designed as a **professional thin library JAR**:
-- **Zero Classpath Pollution**: All dependencies (`spring-web`, `spring-webmvc`, `jakarta.validation-api`, `jakarta.servlet-api`, `jackson-annotations`, `slf4j-api`) are marked `provided` and `optional`. The library never forces transitive dependencies onto consumer projects.
+- **Zero Classpath Pollution**: All dependencies (`spring-web`, `spring-webmvc`, `jakarta.validation-api`, `jakarta.servlet-api`, `spring-tx`, `jakarta.persistence-api`, `jackson-annotations`, `slf4j-api`) are marked `provided` and `optional`. The library never forces transitive dependencies onto consumer projects.
 - **Conditional Auto-Configuration**: Exception handlers auto-register only if their respective dependencies are present in the consumer project. If absent, they gracefully back off with zero errors.
 - **IDE Friendly**: Bundles compiled source JAR (`-sources.jar`) and Javadoc JAR (`-javadoc.jar`) for instant code completion and documentation.
 - **Java Baseline**: Built for Java 17 minimum, fully compatible with Java 21, 25, and future LTS releases. Compatible with Spring Boot 3.0 through 4.x.
@@ -24,7 +24,7 @@ Designed as a **professional thin library JAR**:
 - [Features & Usage](#-features--usage)
   - [1. Unified API Responses (`ApiResponseBuilder` & `Response`)](#1-unified-api-responses-apiresponsebuilder--response)
   - [2. Standardized API Exceptions (`ApiException`)](#2-standardized-api-exceptions-apiexception)
-  - [3. Modular & Conditional Global Exception Handling (`CoreExceptionLogger`)](#3-modular--conditional-global-exception-handling)
+  - [3. Modular & Conditional Global Exception Handling](#3-modular--conditional-global-exception-handling)
   - [4. Modular Utility Classes (`StringUtils`, `CollectionUtils`, `RandomUtils`)](#4-modular-utility-classes)
 - [Related Libraries](#-related-libraries)
 - [Building From Source](#-building-from-source)
@@ -207,11 +207,11 @@ Provides static methods to build standard Spring `ResponseEntity` objects withou
 
 #### Modular Builder Hierarchy
 The response builder is organized into a modular inheritance hierarchy:
-- [ResponseBuilder](file:///d:/enterprise-system/spring-helper/core-helper/src/main/java/com/jiaul/corehelper/response/ResponseBuilder.java): Core low-level `build(...)` methods for custom `HttpStatus`, headers, and payloads.
-- [SuccessResponseBuilder](file:///d:/enterprise-system/spring-helper/core-helper/src/main/java/com/jiaul/corehelper/response/SuccessResponseBuilder.java): 2xx success builders (`ok`, `created`, `accepted`, `noContent`).
-- [ClientErrorResponseBuilder](file:///d:/enterprise-system/spring-helper/core-helper/src/main/java/com/jiaul/corehelper/response/ClientErrorResponseBuilder.java): 4xx client error builders (`badRequest`, `unauthorized`, `forbidden`, `notFound`, `conflict`, `unprocessableEntity`, `tooManyRequests`).
-- [ServerErrorResponseBuilder](file:///d:/enterprise-system/spring-helper/core-helper/src/main/java/com/jiaul/corehelper/response/ServerErrorResponseBuilder.java): 5xx server error builders (`internalServerError`).
-- [ApiResponseBuilder](file:///d:/enterprise-system/spring-helper/core-helper/src/main/java/com/jiaul/corehelper/response/ApiResponseBuilder.java): Final unified utility class inheriting all methods from the hierarchy.
+- [ResponseBuilder](src/main/java/com/jiaul/corehelper/response/ResponseBuilder.java): Core low-level `build(...)` methods for custom `HttpStatus`, headers, and payloads.
+- [SuccessResponseBuilder](src/main/java/com/jiaul/corehelper/response/SuccessResponseBuilder.java): 2xx success builders (`ok`, `created`, `accepted`, `noContent`).
+- [ClientErrorResponseBuilder](src/main/java/com/jiaul/corehelper/response/ClientErrorResponseBuilder.java): 4xx client error builders (`badRequest`, `unauthorized`, `forbidden`, `notFound`, `conflict`, `unprocessableEntity`, `tooManyRequests`).
+- [ServerErrorResponseBuilder](src/main/java/com/jiaul/corehelper/response/ServerErrorResponseBuilder.java): 5xx server error builders (`internalServerError`).
+- [ApiResponseBuilder](src/main/java/com/jiaul/corehelper/response/ApiResponseBuilder.java): Final unified utility class inheriting all methods from the hierarchy.
 
 ```java
 import com.jiaul.corehelper.response.ApiResponseBuilder;
@@ -351,7 +351,7 @@ throw new TooManyRequestsException("Too Many Requests", "Rate limit exceeded", "
 
 ### 3. Modular & Conditional Global Exception Handling
 
-`core-helper` provides **zero-configuration, modular global exception handlers** registered automatically via Spring Boot Auto-Configuration (`CoreHelperAutoConfiguration`).
+`core-helper` provides **zero-configuration, modular global exception handlers** in `com.jiaul.corehelper.handler` registered automatically via Spring Boot Auto-Configuration (`CoreHelperAutoConfiguration`).
 
 To guarantee **zero forced dependencies**, each exception category is isolated into its own handler and registered **conditionally** based on classpath availability:
 
@@ -359,12 +359,16 @@ To guarantee **zero forced dependencies**, each exception category is isolated i
 
 | Handler Class | Handled Exceptions | Trigger / Source | Condition for Auto-Registration | HTTP Status |
 |---|---|---|---|---|
-| **`CoreExceptionLogger`** | `ApiException` (and subclasses)<br>`MethodArgumentNotValidException`<br>`HttpMessageNotReadableException` | Application errors<br>`@Valid @RequestBody` DTO failure<br>Malformed/missing JSON body | Always loaded for Servlet web applications (`spring-web`) | Defined on exception / `400 BAD REQUEST` |
-| **`ValidationExceptionLogger`** | `ConstraintViolationException` | Jakarta `@Validated` path/query parameter violations | Loaded **only if** `jakarta.validation-api` is present | `400 BAD REQUEST` |
-| **`SpringWebMvcExceptionLogger`** | `HandlerMethodValidationException`<br>`NoResourceFoundException` | Spring 6.1+ method validation<br>Unmapped endpoint 404 | Loaded **only if** Spring 6.1+ / Spring Boot 3.2+ Web MVC classes are present | `400 BAD REQUEST`<br>`404 NOT FOUND` |
+| **`CoreExceptionHandler`** | `ApiException` (and subclasses) | Application errors | Always loaded for Servlet web applications | Defined on exception |
+| **`SpringWebExceptionHandler`** | `MethodArgumentNotValidException`<br>`HttpMessageNotReadableException` | `@Valid @RequestBody` DTO failure<br>Malformed/missing JSON body | Loaded **only if** `spring-web` (`MethodArgumentNotValidException`, `HttpMessageNotReadableException`) is present | `400 BAD REQUEST` |
+| **`SpringWebValidationExceptionHandler`** | `HandlerMethodValidationException` | Spring 6.1+ method parameter validation | Loaded **only if** `spring-web` 6.1+ / Boot 3.2+ (`HandlerMethodValidationException`) is present | `400 BAD REQUEST` |
+| **`SpringWebMvcExceptionHandler`** | `NoResourceFoundException` | Unmapped endpoint 404 | Loaded **only if** `spring-webmvc` 6.1+ / Boot 3.2+ (`NoResourceFoundException`) is present | `404 NOT FOUND` |
+| **`ValidationExceptionHandler`** | `ConstraintViolationException` | Jakarta `@Validated` path/query parameter violations | Loaded **only if** `jakarta.validation-api` is present | `400 BAD REQUEST` |
+| **`DataAccessExceptionHandler`** | `DataIntegrityViolationException` | Unique/foreign key or DB constraint violations | Loaded **only if** `spring-tx` (`DataIntegrityViolationException`) is present | `409 CONFLICT` |
+| **`JpaExceptionHandler`** | `EntityNotFoundException` | JPA `EntityManager` / repository lookup failure | Loaded **only if** `jakarta.persistence-api` (`EntityNotFoundException`) is present | `404 NOT FOUND` |
 
 > [!NOTE]
-> If a consumer project does not include `spring-boot-starter-validation`, `ValidationExceptionLogger` is silently skipped by Spring Boot without causing any `NoClassDefFoundError` or application startup failure!
+> If a consumer project does not include `spring-boot-starter-validation`, `ValidationExceptionHandler` is silently skipped by Spring Boot without causing any `NoClassDefFoundError` or application startup failure!
 
 #### 📦 Example Validation Failure Response:
 ```json
@@ -380,7 +384,7 @@ To guarantee **zero forced dependencies**, each exception category is isolated i
 ```
 
 #### 🔍 Structured Diagnostic Logging:
-Every intercepted exception logs uniform, actionable diagnostic context to SLF4J:
+Every intercepted exception logs uniform, actionable diagnostic context to SLF4J via `ExceptionLogger.logException(...)`:
 ```text
 Origin     : com.example.controller.UserController.createUser:28
 Exception  : MethodArgumentNotValidException
@@ -402,8 +406,12 @@ core-helper.exception-handler.enabled=false
 
 # Or disable individually:
 core-helper.exception-handler.core.enabled=false
-core-helper.exception-handler.validation.enabled=false
+core-helper.exception-handler.web.enabled=false
+core-helper.exception-handler.web-validation.enabled=false
 core-helper.exception-handler.webmvc.enabled=false
+core-helper.exception-handler.validation.enabled=false
+core-helper.exception-handler.data-access.enabled=false
+core-helper.exception-handler.jpa.enabled=false
 ```
 
 ---
@@ -412,7 +420,7 @@ core-helper.exception-handler.webmvc.enabled=false
 
 `core-helper` provides a high-performance, stateless utility suite divided into specialized classes:
 
-#### A. String & Buffer Utilities ([StringUtils](file:///d:/enterprise-system/spring-helper/core-helper/src/main/java/com/jiaul/corehelper/utility/StringUtils.java))
+#### A. String & Buffer Utilities ([StringUtils](src/main/java/com/jiaul/corehelper/utility/StringUtils.java))
 All methods accept `CharSequence`, enabling unified support across `String`, `StringBuilder`, and `StringBuffer` without unnecessary allocations:
 
 ```java
@@ -432,7 +440,7 @@ String nonNull = StringUtils.emptyIfNull(nullableStr); // returns "" if null
 String strVal = StringUtils.defaultIfNull(nullCs, "default");
 ```
 
-#### B. Collection & Map Utilities ([CollectionUtils](file:///d:/enterprise-system/spring-helper/core-helper/src/main/java/com/jiaul/corehelper/utility/CollectionUtils.java))
+#### B. Collection & Map Utilities ([CollectionUtils](src/main/java/com/jiaul/corehelper/utility/CollectionUtils.java))
 Eliminates `NullPointerException`s in loops and provides safe defaults:
 
 ```java
@@ -454,7 +462,7 @@ List<String> list = CollectionUtils.defaultIfEmpty(customTags, defaultTags);
 Map<String, String> map = CollectionUtils.defaultIfEmpty(customProps, defaultProps);
 ```
 
-#### C. Secure Random & UUID Utilities ([RandomUtils](file:///d:/enterprise-system/spring-helper/core-helper/src/main/java/com/jiaul/corehelper/utility/RandomUtils.java))
+#### C. Secure Random & UUID Utilities ([RandomUtils](src/main/java/com/jiaul/corehelper/utility/RandomUtils.java))
 Cryptographically secure random values and RFC-compliant UUID operations backed by `SecureRandom`:
 
 ```java

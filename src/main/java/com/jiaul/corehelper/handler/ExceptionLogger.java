@@ -1,4 +1,4 @@
-package com.jiaul.corehelper.exception.handler;
+package com.jiaul.corehelper.handler;
 
 import com.jiaul.corehelper.exception.ApiException;
 import org.slf4j.Logger;

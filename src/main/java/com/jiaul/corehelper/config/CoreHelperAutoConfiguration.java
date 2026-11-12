@@ -1,8 +1,12 @@
 package com.jiaul.corehelper.config;
 
-import com.jiaul.corehelper.exception.handler.CoreExceptionLogger;
-import com.jiaul.corehelper.exception.handler.SpringWebMvcExceptionLogger;
-import com.jiaul.corehelper.exception.handler.ValidationExceptionLogger;
+import com.jiaul.corehelper.handler.CoreExceptionHandler;
+import com.jiaul.corehelper.handler.DataAccessExceptionHandler;
+import com.jiaul.corehelper.handler.JpaExceptionHandler;
+import com.jiaul.corehelper.handler.SpringWebExceptionHandler;
+import com.jiaul.corehelper.handler.SpringWebMvcExceptionHandler;
+import com.jiaul.corehelper.handler.SpringWebValidationExceptionHandler;
+import com.jiaul.corehelper.handler.ValidationExceptionHandler;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -24,8 +28,12 @@ import org.springframework.context.annotation.Configuration;
  * Or individually:
  * <pre>{@code
  * core-helper.exception-handler.core.enabled=false
- * core-helper.exception-handler.validation.enabled=false
+ * core-helper.exception-handler.web.enabled=false
+ * core-helper.exception-handler.web-validation.enabled=false
  * core-helper.exception-handler.webmvc.enabled=false
+ * core-helper.exception-handler.validation.enabled=false
+ * core-helper.exception-handler.data-access.enabled=false
+ * core-helper.exception-handler.jpa.enabled=false
  * }</pre>
  */
 @AutoConfiguration
@@ -34,20 +42,58 @@ import org.springframework.context.annotation.Configuration;
 public class CoreHelperAutoConfiguration {
 
     /**
-     * Registers the foundational {@link CoreExceptionLogger} for {@code ApiException},
-     * {@code MethodArgumentNotValidException}, and {@code HttpMessageNotReadableException}.
+     * Registers the foundational {@link CoreExceptionHandler} for {@code ApiException}.
      *
-     * @return the default {@link CoreExceptionLogger}
+     * @return the default {@link CoreExceptionHandler}
      */
     @Bean
-    @ConditionalOnMissingBean(CoreExceptionLogger.class)
+    @ConditionalOnMissingBean(CoreExceptionHandler.class)
     @ConditionalOnProperty(prefix = "core-helper.exception-handler.core", name = "enabled", havingValue = "true", matchIfMissing = true)
-    public CoreExceptionLogger coreExceptionLogger() {
-        return new CoreExceptionLogger();
+    public CoreExceptionHandler coreExceptionHandler() {
+        return new CoreExceptionHandler();
     }
 
     /**
-     * Nested configuration for Jakarta Bean Validation ({@link ValidationExceptionLogger}).
+     * Nested configuration for standard Spring Web ({@code spring-web}) exceptions ({@link SpringWebExceptionHandler}).
+     * <p>
+     * Active only when {@code MethodArgumentNotValidException} and {@code HttpMessageNotReadableException}
+     * are available on the classpath.
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = {
+            "org.springframework.web.bind.MethodArgumentNotValidException",
+            "org.springframework.http.converter.HttpMessageNotReadableException"
+    })
+    @ConditionalOnProperty(prefix = "core-helper.exception-handler.web", name = "enabled", havingValue = "true", matchIfMissing = true)
+    public static class SpringWebExceptionConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean(SpringWebExceptionHandler.class)
+        public SpringWebExceptionHandler springWebExceptionHandler() {
+            return new SpringWebExceptionHandler();
+        }
+    }
+
+    /**
+     * Nested configuration for Spring Web 6.1+ / Spring Boot 3.2+ method validation ({@link SpringWebValidationExceptionHandler}).
+     * <p>
+     * Active only when {@code org.springframework.web.method.annotation.HandlerMethodValidationException}
+     * from {@code spring-web} is available on the classpath.
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = "org.springframework.web.method.annotation.HandlerMethodValidationException")
+    @ConditionalOnProperty(prefix = "core-helper.exception-handler.web-validation", name = "enabled", havingValue = "true", matchIfMissing = true)
+    public static class SpringWebValidationExceptionConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean(SpringWebValidationExceptionHandler.class)
+        public SpringWebValidationExceptionHandler springWebValidationExceptionHandler() {
+            return new SpringWebValidationExceptionHandler();
+        }
+    }
+
+    /**
+     * Nested configuration for Jakarta Bean Validation ({@link ValidationExceptionHandler}).
      * <p>
      * Active only when {@code jakarta.validation.ConstraintViolationException} is available on the classpath.
      */
@@ -57,29 +103,61 @@ public class CoreHelperAutoConfiguration {
     public static class ValidationExceptionConfiguration {
 
         @Bean
-        @ConditionalOnMissingBean(ValidationExceptionLogger.class)
-        public ValidationExceptionLogger validationExceptionLogger() {
-            return new ValidationExceptionLogger();
+        @ConditionalOnMissingBean(ValidationExceptionHandler.class)
+        public ValidationExceptionHandler validationExceptionHandler() {
+            return new ValidationExceptionHandler();
         }
     }
 
     /**
-     * Nested configuration for Spring 6.1+ / Spring Boot 3.2+ Web MVC exceptions ({@link SpringWebMvcExceptionLogger}).
+     * Nested configuration for Spring Web MVC 6.1+ / Spring Boot 3.2+ 404 exceptions ({@link SpringWebMvcExceptionHandler}).
      * <p>
-     * Active only when {@code NoResourceFoundException} and {@code HandlerMethodValidationException} are available on the classpath.
+     * Active only when {@code org.springframework.web.servlet.resource.NoResourceFoundException}
+     * from {@code spring-webmvc} is available on the classpath.
      */
     @Configuration(proxyBeanMethods = false)
-    @ConditionalOnClass(name = {
-            "org.springframework.web.servlet.resource.NoResourceFoundException",
-            "org.springframework.web.method.annotation.HandlerMethodValidationException"
-    })
+    @ConditionalOnClass(name = "org.springframework.web.servlet.resource.NoResourceFoundException")
     @ConditionalOnProperty(prefix = "core-helper.exception-handler.webmvc", name = "enabled", havingValue = "true", matchIfMissing = true)
     public static class SpringWebMvcExceptionConfiguration {
 
         @Bean
-        @ConditionalOnMissingBean(SpringWebMvcExceptionLogger.class)
-        public SpringWebMvcExceptionLogger springWebMvcExceptionLogger() {
-            return new SpringWebMvcExceptionLogger();
+        @ConditionalOnMissingBean(SpringWebMvcExceptionHandler.class)
+        public SpringWebMvcExceptionHandler springWebMvcExceptionHandler() {
+            return new SpringWebMvcExceptionHandler();
+        }
+    }
+
+    /**
+     * Nested configuration for Spring Data Access exceptions ({@link DataAccessExceptionHandler}).
+     * <p>
+     * Active only when {@code org.springframework.dao.DataIntegrityViolationException} is available on the classpath.
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = "org.springframework.dao.DataIntegrityViolationException")
+    @ConditionalOnProperty(prefix = "core-helper.exception-handler.data-access", name = "enabled", havingValue = "true", matchIfMissing = true)
+    public static class DataAccessExceptionConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean(DataAccessExceptionHandler.class)
+        public DataAccessExceptionHandler dataAccessExceptionHandler() {
+            return new DataAccessExceptionHandler();
+        }
+    }
+
+    /**
+     * Nested configuration for Jakarta Persistence (JPA) exceptions ({@link JpaExceptionHandler}).
+     * <p>
+     * Active only when {@code jakarta.persistence.EntityNotFoundException} is available on the classpath.
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = "jakarta.persistence.EntityNotFoundException")
+    @ConditionalOnProperty(prefix = "core-helper.exception-handler.jpa", name = "enabled", havingValue = "true", matchIfMissing = true)
+    public static class JpaExceptionConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean(JpaExceptionHandler.class)
+        public JpaExceptionHandler jpaExceptionHandler() {
+            return new JpaExceptionHandler();
         }
     }
 }
