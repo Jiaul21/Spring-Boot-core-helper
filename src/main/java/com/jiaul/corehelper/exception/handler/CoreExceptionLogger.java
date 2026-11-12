@@ -25,7 +25,7 @@ import java.util.Map;
  */
 @RestControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE)
-public class CoreExceptionHandler extends BaseExceptionHandler {
+public class CoreExceptionLogger extends ExceptionLogger {
 
     /**
      * Handles any {@link ApiException} thrown by application code or controllers.

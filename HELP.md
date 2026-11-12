@@ -9,14 +9,15 @@ This guide provides instructions and architectural principles for working on, ma
 `core-helper` is designed as a **foundational, zero-pollution Spring Boot library**:
 
 1. **Zero Classpath Pollution**:
-   - `spring-web` and `jackson-annotations` are scoped as `<scope>provided</scope>` and `<optional>true</optional>`.
-   - Consumer applications retain 100% control over their Spring Framework and Jackson versions without version collisions.
+   - `spring-web`, `spring-webmvc`, `jakarta.validation-api`, `jakarta.servlet-api`, `jackson-annotations`, and `slf4j-api` are scoped as `<scope>provided</scope>` and `<optional>true</optional>`.
+   - Consumer applications retain 100% control over their dependencies and versions without transitive dependency bloat.
 
 2. **Standard Thin JAR**:
    - Never use `spring-boot-maven-plugin` with `repackage` goal here. Libraries must produce standard thin library JARs, alongside `-sources.jar` and `-javadoc.jar`.
 
-3. **Java Baseline**:
+3. **Java Baseline & Broad Spring Compatibility**:
    - Compiles with `<release>17</release>` for Java 17 LTS baseline compatibility, while running smoothly on Java 21, 25, and higher.
+   - Compatible across Spring Boot 3.0 through Spring Boot 4.x.
 
 4. **Modular Response Builders**:
    - Inherited hierarchy: `ResponseBuilder` ➔ `SuccessResponseBuilder` ➔ `ClientErrorResponseBuilder` ➔ `ServerErrorResponseBuilder` ➔ `ApiResponseBuilder`.
@@ -25,10 +26,13 @@ This guide provides instructions and architectural principles for working on, ma
 5. **Uniform Exception Handling**:
    - All custom exceptions inherit from `ApiException` which encapsulates HTTP status, `message`, `error`, and `data`.
 
-6. **Auto-Configured Global Exception Handling**:
-   - `CoreHelperAutoConfiguration` automatically registers `CoreExceptionHandler` via Spring Boot 3's `AutoConfiguration.imports` and `spring.factories`.
-   - Uses `@Order(Ordered.LOWEST_PRECEDENCE)` so application-level handlers always take precedence.
-   - Consumers can disable auto-configuration via `core-helper.exception-handler.enabled=false`.
+6. **Modular & Conditional Auto-Configuration**:
+   - `CoreHelperAutoConfiguration` registers exception handlers conditionally:
+     - `CoreExceptionLogger`: Always active for Servlet web applications (`ApiException`, `@Valid` bean validation, missing/malformed JSON body).
+     - `ValidationExceptionLogger`: Conditionally loaded via `@ConditionalOnClass(name = "jakarta.validation.ConstraintViolationException")`.
+     - `SpringWebMvcExceptionLogger`: Conditionally loaded via `@ConditionalOnClass` for modern Spring 6.1+ / Spring Boot 3.2+ features (`NoResourceFoundException`, `HandlerMethodValidationException`).
+   - If a consumer does not include an optional dependency, Spring Boot skips the corresponding bean with zero startup reflection errors.
+   - Handlers can be disabled globally (`core-helper.exception-handler.enabled=false`) or granularly (`.core.enabled=false`, `.validation.enabled=false`, `.webmvc.enabled=false`).
 
 7. **Modular Utility Classes**:
    - Specialized stateless classes: `StringUtils` (with unified `CharSequence`, `StringBuilder`, and `StringBuffer` support for blank/empty/whitespace checks and safe fallbacks), `CollectionUtils` (collections, maps, arrays, null-safe collections, and default fallbacks), and `RandomUtils` (cryptographically secure random strings, numbers, and UUIDs).

@@ -5,12 +5,13 @@
 [![JitPack](https://jitpack.io/v/Jiaul21/Spring-Boot-core-helper.svg)](https://jitpack.io/#Jiaul21/Spring-Boot-core-helper)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-A foundational, zero-overhead Spring Boot library providing uniform API response builders, standardized API exception hierarchies, and null/empty utility validators.
+A foundational, zero-overhead Spring Boot library providing uniform API response builders, standardized API exception hierarchies, modular conditional exception handling, and null/empty utility validators.
 
 Designed as a **professional thin library JAR**:
-- **Zero Classpath Pollution**: Framework dependencies (`spring-web`, `jackson-annotations`) are marked `provided` and `optional`. Your consumer application retains 100% control over Spring and Jackson versions.
+- **Zero Classpath Pollution**: All dependencies (`spring-web`, `spring-webmvc`, `jakarta.validation-api`, `jakarta.servlet-api`, `jackson-annotations`, `slf4j-api`) are marked `provided` and `optional`. The library never forces transitive dependencies onto consumer projects.
+- **Conditional Auto-Configuration**: Exception handlers auto-register only if their respective dependencies are present in the consumer project. If absent, they gracefully back off with zero errors.
 - **IDE Friendly**: Bundles compiled source JAR (`-sources.jar`) and Javadoc JAR (`-javadoc.jar`) for instant code completion and documentation.
-- **Java Baseline**: Built for Java 17 minimum, fully compatible with Java 21, 25, and future LTS releases.
+- **Java Baseline**: Built for Java 17 minimum, fully compatible with Java 21, 25, and future LTS releases. Compatible with Spring Boot 3.0 through 4.x.
 
 ---
 
@@ -23,7 +24,7 @@ Designed as a **professional thin library JAR**:
 - [Features & Usage](#-features--usage)
   - [1. Unified API Responses (`ApiResponseBuilder` & `Response`)](#1-unified-api-responses-apiresponsebuilder--response)
   - [2. Standardized API Exceptions (`ApiException`)](#2-standardized-api-exceptions-apiexception)
-  - [3. Automatic Global Exception Handling (`CoreExceptionHandler`)](#3-automatic-global-exception-handling-coreexceptionhandler)
+  - [3. Modular & Conditional Global Exception Handling (`CoreExceptionLogger`)](#3-modular--conditional-global-exception-handling)
   - [4. Modular Utility Classes (`StringUtils`, `CollectionUtils`, `RandomUtils`)](#4-modular-utility-classes)
 - [Related Libraries](#-related-libraries)
 - [Building From Source](#-building-from-source)
@@ -348,29 +349,61 @@ throw new TooManyRequestsException("Too Many Requests", "Rate limit exceeded", "
 
 ---
 
-### 3. Automatic Global Exception Handling (`CoreExceptionHandler`)
+### 3. Modular & Conditional Global Exception Handling
 
-`core-helper` provides an **out-of-the-box global exception handler** registered automatically via Spring Boot Auto-Configuration (`CoreHelperAutoConfiguration`).
+`core-helper` provides **zero-configuration, modular global exception handlers** registered automatically via Spring Boot Auto-Configuration (`CoreHelperAutoConfiguration`).
 
-#### How It Works:
-1. **Zero Configuration**: Any `ApiException` thrown by your controllers or service layer is automatically intercepted.
-2. **Unified JSON Response**: It is immediately serialized into the standardized `Response` JSON format with the matching HTTP status code.
-3. **Structured Diagnostic Logging**: Logs origin class, method, line number, HTTP status, message, error payload, and data payload to SLF4J:
-   ```text
-   Origin     : com.example.service.UserService.findById:42
-   Exception  : NotFoundException
-   HttpStatus : 404 NOT_FOUND
-   Message    : Not Found
-   Error      : User not found with id: 123
-   Data       : N/A
-   ```
-4. **Non-Intrusive Priority**: Marked with `@Order(Ordered.LOWEST_PRECEDENCE)` so any application-level `@RestControllerAdvice` you write will automatically take precedence over the default handler.
+To guarantee **zero forced dependencies**, each exception category is isolated into its own handler and registered **conditionally** based on classpath availability:
 
-#### Disabling Auto-Configuration (Optional)
-If you wish to manage all exception handling manually, you can disable the default handler in `application.properties` or `application.yml`:
+#### 📋 Modular Handlers & Auto-Registration Conditions:
+
+| Handler Class | Handled Exceptions | Trigger / Source | Condition for Auto-Registration | HTTP Status |
+|---|---|---|---|---|
+| **`CoreExceptionLogger`** | `ApiException` (and subclasses)<br>`MethodArgumentNotValidException`<br>`HttpMessageNotReadableException` | Application errors<br>`@Valid @RequestBody` DTO failure<br>Malformed/missing JSON body | Always loaded for Servlet web applications (`spring-web`) | Defined on exception / `400 BAD REQUEST` |
+| **`ValidationExceptionLogger`** | `ConstraintViolationException` | Jakarta `@Validated` path/query parameter violations | Loaded **only if** `jakarta.validation-api` is present | `400 BAD REQUEST` |
+| **`SpringWebMvcExceptionLogger`** | `HandlerMethodValidationException`<br>`NoResourceFoundException` | Spring 6.1+ method validation<br>Unmapped endpoint 404 | Loaded **only if** Spring 6.1+ / Spring Boot 3.2+ Web MVC classes are present | `400 BAD REQUEST`<br>`404 NOT FOUND` |
+
+> [!NOTE]
+> If a consumer project does not include `spring-boot-starter-validation`, `ValidationExceptionLogger` is silently skipped by Spring Boot without causing any `NoClassDefFoundError` or application startup failure!
+
+#### 📦 Example Validation Failure Response:
+```json
+{
+  "message": "Validation failed",
+  "error": {
+    "email": "Email must be a well-formed email address",
+    "age": "Must be greater than or equal to 18"
+  },
+  "data": null,
+  "timestamp": "2026-11-10T18:18:00Z"
+}
+```
+
+#### 🔍 Structured Diagnostic Logging:
+Every intercepted exception logs uniform, actionable diagnostic context to SLF4J:
+```text
+Origin     : com.example.controller.UserController.createUser:28
+Exception  : MethodArgumentNotValidException
+HttpStatus : 400 BAD_REQUEST
+Message    : Validation failed
+Error      : {email=Email must be a well-formed email address}
+Data       : N/A
+```
+
+#### 🛡️ Non-Intrusive Priority (`@Order(LOWEST_PRECEDENCE)`):
+All handlers are annotated with `@Order(Ordered.LOWEST_PRECEDENCE)`. Any application-specific `@RestControllerAdvice` defined in consumer applications will automatically take precedence.
+
+#### ⚙️ Fine-Grained Auto-Configuration Controls:
+Handlers can be disabled globally or individually in `application.properties` or `application.yml`:
 
 ```properties
+# Disable all core-helper exception handlers at once
 core-helper.exception-handler.enabled=false
+
+# Or disable individually:
+core-helper.exception-handler.core.enabled=false
+core-helper.exception-handler.validation.enabled=false
+core-helper.exception-handler.webmvc.enabled=false
 ```
 
 ---
